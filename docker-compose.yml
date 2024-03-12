@@ -4,7 +4,7 @@
       build: .
       container_name: RegisterApi
       ports:
-        - "8002:8002"
+        - "8000:8000"
       volumes:
         - .:/app
         - static_volume:/usr/src/app/back-static
@@ -12,7 +12,7 @@
       restart: always
 #      depends_on:
 #        - pgdb
-      command: sh -c "python3 manage.py makemigrations && python3 manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8002"
+      command: sh -c "python3 manage.py makemigrations && python3 manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
 
 #    pgdb:
 #      image: postgres:alpine3.19
@@ -40,6 +40,28 @@
         - django
 
 
+    server:
+      restart: unless-stopped
+      build:
+        context: .
+        dockerfile: ./docker/backend/Dockerfile
+      entrypoint: /app/docker/backend/server-entrypoint.sh
+      volumes:
+        - static_volume:/app/backend/back-static
+      expose:
+        - 8000
+      environment:
+        DEBUG: "True"
+        CELERY_BROKER_URL: "redis://redis:6379/0"
+        CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+#        DJANGO_DB: postgresql
+#        POSTGRES_HOST: db
+#        POSTGRES_NAME: postgres
+#        POSTGRES_USER: postgres
+#        POSTGRES_PASSWORD: postgres
+#        POSTGRES_PORT: 5432
+
+
     redis:
       restart: unless-stopped
       image: redis:7.0.5-alpine
@@ -53,20 +75,22 @@
         dockerfile: ./docker/backend/Dockerfile
       entrypoint: /app/docker/backend/worker-entrypoint.sh
       volumes:
-        - static_volume:/app/backend/django_static
+        - static_volume:/app/backend/back-static
       environment:
         DEBUG: "True"
         CELERY_BROKER_URL: "redis://redis:6379/0"
         CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-        DJANGO_DB: postgresql
-        POSTGRES_HOST: db
-        POSTGRES_NAME: postgres
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_PORT: 5432
+#        DJANGO_DB: postgresql
+#        POSTGRES_HOST: db
+#        POSTGRES_NAME: postgres
+#        POSTGRES_USER: postgres
+#        POSTGRES_PASSWORD: postgres
+#        POSTGRES_PORT: 5432
       depends_on:
         - server
         - redis
+
+
   volumes:
     static_volume:
     media_volumes:
