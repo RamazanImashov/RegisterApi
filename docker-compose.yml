@@ -10,22 +10,22 @@
         - static_volume:/usr/src/app/back-static
         - media_volumes:/usr/src/app/back-media
       restart: always
-#      depends_on:
-#        - pgdb
+      depends_on:
+        - pgdb
       command: sh -c "python3 manage.py makemigrations && python3 manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
 
-#    pgdb:
-#      image: postgres:alpine3.19
-#      environment:
-#        POSTGRES_DB: ${POSTGRES_NAME}
-#        POSTGRES_USER: ${POSTGRES_USER}
-#        POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-#
-#      container_name: pgdb
-#      volumes:
-#        - db_data:/var/lib/postgresql/data/
-#      ports:
-#        - "5438:5432"
+    pgdb:
+      image: postgres:alpine3.19
+      environment:
+        POSTGRES_DB: ${DB_NAME}
+        POSTGRES_USER: ${DB_USER}
+        POSTGRES_PASSWORD: ${DB_PASS}
+
+      container_name: pgdb
+      volumes:
+        - db_data:/var/lib/postgresql/data/
+      ports:
+        - "5438:5432"
 
 
     nginx:
@@ -54,12 +54,12 @@
         DEBUG: "True"
         CELERY_BROKER_URL: "redis://redis:6379/0"
         CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-#        DJANGO_DB: postgresql
-#        POSTGRES_HOST: db
-#        POSTGRES_NAME: postgres
-#        POSTGRES_USER: postgres
-#        POSTGRES_PASSWORD: postgres
-#        POSTGRES_PORT: 5432
+        DJANGO_DB: postgresql
+        POSTGRES_HOST: db
+        POSTGRES_NAME: postgres
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_PORT: 5432
 
 
     redis:
@@ -80,12 +80,12 @@
         DEBUG: "True"
         CELERY_BROKER_URL: "redis://redis:6379/0"
         CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-#        DJANGO_DB: postgresql
-#        POSTGRES_HOST: db
-#        POSTGRES_NAME: postgres
-#        POSTGRES_USER: postgres
-#        POSTGRES_PASSWORD: postgres
-#        POSTGRES_PORT: 5432
+        DJANGO_DB: postgresql
+        POSTGRES_HOST: db
+        POSTGRES_NAME: postgres
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_PORT: 5432
       depends_on:
         - server
         - redis
