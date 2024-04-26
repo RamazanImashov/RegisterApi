@@ -12,22 +12,32 @@
       restart: always
       depends_on:
         - pgdb
+        - redis
       command: sh -c "python3 manage.py makemigrations && python3 manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:8000"
-
+    celery:
+      build: .
+      command: celery -A core worker -l INFO
+      volumes:
+        - .:/usr/src/app
+      environment:
+        - DEBUG=1
+        - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 [::1]
+        - CELERY_BROKER=redis://redis:6379/0
+        - CELERY_BACKEND=redis://redis:6379/0
+      depends_on:
+        - django
+        - redis
     pgdb:
       image: postgres:alpine3.19
       environment:
         POSTGRES_DB: ${DB_NAME}
         POSTGRES_USER: ${DB_USER}
         POSTGRES_PASSWORD: ${DB_PASS}
-
       container_name: pgdb
       volumes:
         - db_data:/var/lib/postgresql/data/
       ports:
         - "5438:5432"
-
-
     nginx:
       image: nginx
       ports:
@@ -38,58 +48,8 @@
         - media_volumes:/usr/src/app/back-media
       depends_on:
         - django
-
-
-    server:
-      restart: unless-stopped
-      build:
-        context: .
-        dockerfile: ./docker/backend/Dockerfile
-      entrypoint: /app/docker/backend/server-entrypoint.sh
-      volumes:
-        - static_volume:/app/backend/back-static
-      expose:
-        - 8000
-      environment:
-        DEBUG: "True"
-        CELERY_BROKER_URL: "redis://redis:6379/0"
-        CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-        DJANGO_DB: postgresql
-        POSTGRES_HOST: db
-        POSTGRES_NAME: postgres
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_PORT: 5432
-
-
     redis:
-      restart: unless-stopped
-      image: redis:7.0.5-alpine
-      expose:
-        - 6379
-
-    worker:
-      restart: unless-stopped
-      build:
-        context: .
-        dockerfile: ./docker/backend/Dockerfile
-      entrypoint: /app/docker/backend/worker-entrypoint.sh
-      volumes:
-        - static_volume:/app/backend/back-static
-      environment:
-        DEBUG: "True"
-        CELERY_BROKER_URL: "redis://redis:6379/0"
-        CELERY_RESULT_BACKEND: "redis://redis:6379/0"
-        DJANGO_DB: postgresql
-        POSTGRES_HOST: db
-        POSTGRES_NAME: postgres
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_PORT: 5432
-      depends_on:
-        - server
-        - redis
-
+      image: "redis:alpine"
 
   volumes:
     static_volume:
